@@ -1,0 +1,14 @@
+---
+title: Command Center
+theme: dark
+color: slate
+
+layout:
+  Infraestrutura:
+    style: row
+    columns: 4
+
+background:
+  image: https://images.unsplash.com/photo-1614729939124-032f0b56c9ce?q=80&w=2500
+  blur: sm
+  brightness: 50

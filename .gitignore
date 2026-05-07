@@ -1,0 +1,13 @@
+**/.env
+**/data/
+**/db/
+.DS_Store
+**/logs/
+*.log
+immich/library/
+monitor/prometheus_data/
+uptime-kuma/kuma_data/
+**/postgres_data/
+**/redis_data/
+**/.cache/
+**/thumbs/

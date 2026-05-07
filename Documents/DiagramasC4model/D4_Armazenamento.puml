@@ -1,0 +1,77 @@
+@startuml D4_Armazenamento
+!theme materia
+title Homelab — D4: Armazenamento\n(Host volumes e as suas montagens por serviço)
+
+left to right direction
+skinparam defaultTextAlignment center
+skinparam nodesep 30
+skinparam ranksep 60
+
+' ── Serviços agrupados por diagrama de origem ─────────────────
+
+package "D2a — Infraestrutura & Proxy" #LightYellow {
+    card "Nginx Proxy Manager" as npm
+    card "Portainer"           as portainer
+    card "Homepage"            as homepage
+    card "AdGuard Home"        as adguard
+    card "Uptime Kuma"         as uptimekuma
+}
+
+package "D2b/D0 — Private Cloud" #LightBlue {
+    card "Immich Server" as immich_server
+    card "Immich ML"     as immich_ml
+    card "Postgres DB"   as immich_db
+}
+
+package "D3 — Observabilidade" #LightGreen {
+    card "Grafana"       as grafana
+    card "Prometheus"    as prometheus
+    card "Node Exporter" as node_exporter
+    card "cAdvisor"      as cadvisor
+    card "Promtail"      as promtail
+}
+
+' ── Volumes (host) ────────────────────────────────────────────
+database "Host Volumes / Mounts\n(/var/lib/docker/volumes/ & Bind)" as vols {
+    storage "npm_data\nnpm_letsencrypt"       as vol_npm
+    storage "portainer_data"                  as vol_portainer
+    storage "homepage_config"                 as vol_homepage
+    storage "adguard_config\nadguard_data"    as vol_adguard
+    storage "kuma_data"                       as vol_kuma
+    
+    storage "pgdata\nmodel-cache\n${UPLOAD_LOCATION}" as vol_immich
+    
+    storage "grafana_data"                    as vol_grafana
+    storage "prometheus_data\n.yml config"    as vol_prom
+    storage "Host root (/)\nDocker Sock/Logs" as vol_host
+}
+
+' ── Montagens — Infraestrutura ────────────────────────────────
+npm        ..> vol_npm       : "mount"
+portainer  ..> vol_portainer : "mount"
+homepage   ..> vol_homepage  : "mount"
+adguard    ..> vol_adguard   : "mount"
+uptimekuma ..> vol_kuma      : "mount"
+
+' ── Montagens — Private Cloud ─────────────────────────────────
+immich_server ..> vol_immich : "mount"
+immich_ml     ..> vol_immich : "mount (cache)"
+immich_db     ..> vol_immich : "mount (pgdata)"
+
+' ── Montagens — Observabilidade ───────────────────────────────
+grafana       ..> vol_grafana : "mount"
+prometheus    ..> vol_prom    : "mount"
+node_exporter ..> vol_host    : "bind (rootfs)"
+cadvisor      ..> vol_host    : "bind (sys/sock)"
+promtail      ..> vol_host    : "bind (sock/logs)"
+
+' ── Notas ─────────────────────────────────────────────────────
+note bottom of vol_npm
+  Inclui certificados Let's Encrypt
+end note
+
+note bottom of vols
+  Dados persistem a um `docker compose down`.
+end note
+
+@enduml

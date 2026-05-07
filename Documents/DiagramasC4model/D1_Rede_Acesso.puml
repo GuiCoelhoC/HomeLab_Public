@@ -1,0 +1,78 @@
+@startuml D1_Rede_Acesso
+!theme materia
+title Homelab — D1: Rede & Acesso\n(Como o tráfego entra — e o que é bloqueado)
+
+top to bottom direction
+skinparam defaultTextAlignment center
+skinparam nodesep 40
+skinparam ranksep 55
+
+' ── Sistemas externos ─────────────────────────────────────────
+cloud "Internet (WAN)\n[IP Público Dinâmico]" as wan
+cloud "Rede Local (LAN)\n[${LAN_SUBNET}]" as lan
+
+' ── Router ────────────────────────────────────────────────────
+node "Router Principal" as router {
+    card "NAT / Port Forwarding\n[51820 UDP → Host]" as nat
+}
+
+' ── Host ──────────────────────────────────────────────────────
+node "Host [${SERVER_IP}]" as host {
+
+    card "DuckDNS (DDNS)\n[Docker · Outbound only]" as ddns
+
+    card "WireGuard VPN (PiVPN)\n[Bare-metal · Gateway]\n[Porta: 51820 UDP]\n[Túnel: ${VPN_SUBNET}]" as vpn
+
+    card "Nginx Proxy Manager\n[Docker · Portas host: 80, 443]\n[Único ponto de entrada HTTP/S]" as npm
+
+}
+
+' ── Fluxo da WAN para o router ───────────────────────────────
+wan --> router
+
+' ── Port forwarding no router ────────────────────────────────
+nat --> vpn     : "51820 UDP\n(VPN tunnel)"
+
+' ── Acesso LAN direto ────────────────────────────────────────
+lan --> npm : "HTTP/S (80/443)\nacesso direto"
+lan --> vpn
+
+' ── DDNS outbound ────────────────────────────────────────────
+ddns --> wan : "Atualiza registo DNS\n(outbound)"
+
+' ── VPN injeta na LAN ────────────────────────────────────────
+vpn --> lan : "IP Forwarding\n${VPN_SUBNET} → ${LAN_SUBNET}\nCliente remoto passa a estar dentro da LAN"
+
+' ── Bloqueio explícito ────────────────────────────────────────
+note as block
+  <color:red>**ACESSO NEGADO por omissão:**</color>
+  Qualquer porta não listada acima
+  é bloqueada no router.
+  Não há acesso direto HTTP/S externo —
+  cliente remoto tem de entrar pela VPN
+  e depois aceder ao NPM como se
+  estivesse na LAN.
+end note
+
+' ── Notas de contexto ────────────────────────────────────────
+note bottom of vpn
+  Bare-metal (não dockerizado).
+  Injeta clientes remotos
+  diretamente na LAN via
+  IP Forwarding do kernel.
+end note
+
+note right of npm
+  TLS (Let's Encrypt).
+  Só acessível via LAN ou
+  após entrada pela VPN.
+  Nunca exposto diretamente
+  à WAN sem VPN.
+end note
+
+' ── Referência cruzada ───────────────────────────────────────
+note bottom of npm
+  → Proxy passes detalhados em **D2a**
+end note
+
+@enduml

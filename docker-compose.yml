@@ -1,0 +1,84 @@
+networks:
+  homelab_net:
+    driver: bridge
+  monitor_net:
+    external: true
+  immich_net:
+    external: true
+
+volumes:
+  npm_data:
+  npm_letsencrypt:
+  portainer_data:
+  homepage_config:
+  adguard_data:
+  adguard_config:
+
+services:
+  npm:
+    image: jc21/nginx-proxy-manager:latest
+    container_name: npm
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - npm_data:/data
+      - npm_letsencrypt:/etc/letsencrypt
+    networks:
+      - homelab_net
+      - monitor_net
+      - immich_net 
+
+  duckdns:
+    image: lscr.io/linuxserver/duckdns:latest
+    container_name: duckdns
+    restart: unless-stopped
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Lisbon
+      - SUBDOMAINS= ${SUBDOMAINS}
+      - TOKEN=${TOKEN}
+      - LOG_FILE=false
+    networks:
+      - homelab_net
+
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: portainer
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - portainer_data:/data
+    networks:
+      - homelab_net
+
+  adguard:
+    image: adguard/adguardhome:latest
+    container_name: adguard
+    restart: unless-stopped
+    ports:
+      - "53:53/tcp"
+      - "53:53/udp"
+    volumes:
+      - adguard_data:/opt/adguardhome/work
+      - adguard_config:/opt/adguardhome/conf
+    networks:
+      - homelab_net
+
+  homepage:
+    image: ghcr.io/gethomepage/homepage:latest
+    container_name: homepage
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - HOMEPAGE_ALLOWED_HOSTS=${HOST_HOMEPAGE}
+    volumes:
+      - ./homepage_config:/app/config
+    networks:
+      - homelab_net

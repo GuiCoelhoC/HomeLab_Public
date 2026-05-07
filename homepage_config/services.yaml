@@ -1,0 +1,49 @@
+- Infraestrutura:
+    - Nginx Proxy Manager:
+        icon: nginx-proxy-manager
+        href: "{{HOMEPAGE_VAR_DOMAINNPM}}"
+        description: Gestão de Tráfego e SSL
+        widget:
+          type: npm
+          url: http://npm:81
+          username: {{HOMEPAGE_VAR_USERNAME_NPM}}
+          password: {{HOMEPAGE_VAR_PASSWORD_NPM}}
+
+    - AdGuard Home:
+        icon: adguard-home
+        href: "{{HOMEPAGE_VAR_DOMAINADGUARD}}"
+        description: Ditador de DNS
+        widget:
+          type: adguard
+          url: http://adguard:3000
+          username: {{HOMEPAGE_VAR_USERNAME_ADGUARD}}
+          password: {{HOMEPAGE_VAR_PASSWORD_ADGUARD}}
+
+    - Portainer:
+        icon: portainer
+        href: "{{HOMEPAGE_VAR_DOMAINPORTAINER}}"
+        description: Gestão de Containers
+        widget:
+          type: portainer
+          url: http://portainer:9000
+          env: 3
+          key: {{HOMEPAGE_VAR_PORTAINER_KEY}}
+
+    - Grafana:
+        icon: grafana
+        href: "{{HOMEPAGE_VAR_DOMAINGRAFANA}}"
+        description: Telemetria e Dashboards
+        
+    - Uptime Kuma:
+        href: "{{HOMEPAGE_VAR_DOMAINUPTIME}}"
+        description: Monitor de Uptime
+
+    - Router:
+        href: "{{HOMEPAGE_VAR_ROUTER_IP}}"
+        description: Router
+
+- Multimedia:
+    - Immich:
+        href: "{{HOMEPAGE_VAR_DOMAINIMMICH}}"
+        description: Cloud Privada de Fotos
+

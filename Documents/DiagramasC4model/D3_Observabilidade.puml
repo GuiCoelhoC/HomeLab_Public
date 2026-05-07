@@ -1,0 +1,59 @@
+@startuml D3_Observabilidade
+!theme materia
+title Homelab — D3: Observabilidade\n(Pipeline de métricas, logs e alertas)
+
+top to bottom direction
+skinparam defaultTextAlignment center
+skinparam nodesep 40
+skinparam ranksep 50
+
+' ── Sistema externo ───────────────────────────────────────────
+cloud "Discord (API)" as discord
+
+' ── Pipeline de observabilidade ───────────────────────────────
+node "Host [${SERVER_IP}]" as host {
+    frame "Docker Network: monitor_net (Bridge)" {
+        card "Node Exporter\n[Métricas de hardware]" as node_exporter
+        card "cAdvisor\n[Métricas de containers]" as cadvisor
+        
+        card "Promtail\n[Recolha de Docker logs]" as promtail
+
+        card "Prometheus\n[Armazenamento de métricas]" as prometheus
+        card "Loki\n[Armazenamento de logs]" as loki
+
+        card "Grafana\n[Visualização e alertas]" as grafana
+        card "Uptime Kuma\n[Monitor de disponibilidade]" as uptimekuma
+    }
+}
+
+' ── Fluxo de métricas (pull — bottom-up) ─────────────────────
+node_exporter <-- prometheus : "Scrape"
+cadvisor      <-- prometheus : "Scrape"
+promtail      --> loki       : "Push logs"
+
+prometheus    <-- grafana    : "Query PromQL"
+loki          <-- grafana    : "Query LogQL"
+
+' ── Alertas (outbound) ────────────────────────────────────────
+grafana    --> discord : "Webhook"
+uptimekuma --> discord : "Webhook\n(Alertas de disponibilidade)"
+
+' ── Notas ─────────────────────────────────────────────────────
+note right of cadvisor
+  Extrai métricas
+  diretamente do
+  /var/run/docker.sock
+end note
+
+note right of promtail
+  Lê logs montados
+  em /var/log e
+  containers Docker
+end note
+
+' ── Referências cruzadas ──────────────────────────────────────
+note bottom of grafana
+  → Volumes montados em **D4** (Armazenamento)
+end note
+
+@enduml
