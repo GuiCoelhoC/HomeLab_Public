@@ -7,7 +7,7 @@ This repository contains the infrastructure configurations, Docker Compose files
 ## ✨ Key Highlights
 
 * **Architecture Documentation (C4 Model):** Entire infrastructure is mapped out using the C4 model (PlantUML), detailing network boundaries, proxy routing, and data storage.
-* **Security-First approach:** No services are exposed directly to the public internet. Access is strictly managed via a **WireGuard VPN** tunnel, injecting remote clients into the internal LAN. Local DNS and ad-blocking are handled by **AdGuard Home**.
+* **Security-First approach:** Zero incoming active ports. Access is strictly managed via a **Tailscale (ZTNA)** mesh network, injecting remote clients into the internal LAN securely. Local DNS and ad-blocking are handled by **AdGuard Home**.
 * **Advanced Observability Stack:** Full telemetry pipeline utilizing **Prometheus** (time-series metrics), **Loki & Promtail** (log aggregation), **cAdvisor** (container metrics), and **Grafana** for visualization and Discord webhook alerts.
 * **Private Photo Cloud:** Complete **Immich** stack deployment utilizing internal Machine Learning models for facial/object recognition and `pgvecto-rs` PostgreSQL databases.
 
@@ -15,7 +15,7 @@ This repository contains the infrastructure configurations, Docker Compose files
 
 | Category | Tools |
 | :--- | :--- |
-| **Reverse Proxy & Network** | Nginx Proxy Manager, WireGuard, DuckDNS |
+| **Reverse Proxy & Network** | Nginx Proxy Manager, Tailscale (ZTNA), DuckDNS |
 | **Observability** | Grafana, Prometheus, Loki, Promtail, Node Exporter, cAdvisor |
 | **DNS & Security** | AdGuard Home |
 | **Self-Hosted Services**| Immich (Photo/Video Management) |

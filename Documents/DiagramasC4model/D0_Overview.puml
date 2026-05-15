@@ -7,13 +7,13 @@ skinparam defaultTextAlignment center
 skinparam nodesep 60
 skinparam ranksep 60
 
-actor "Utilizador\n(Remoto via VPN)" as user_vpn
+actor "Utilizador\n(Remoto via Tailscale)" as user_vpn
 actor "Utilizador\n(LAN)" as user_lan
 cloud "Internet (WAN)" as wan
 cloud "Discord (API)" as discord
 
 node "Host Services\n[IP: ${SERVER_IP}]" as host {
-    card "Acesso & Rede\n[WireGuard · DuckDNS · NPM]" as net_layer #Cyan
+    card "Acesso & Rede\n[Tailscale · DuckDNS · NPM]" as net_layer #Cyan
     card "Infraestrutura\n[Portainer · Homepage · Uptime Kuma · AdGuard]" as svc_layer #LightGray
     card "Private Cloud\n[Immich Stack]" as immich_layer #LightBlue
     card "Observabilidade\n[Grafana · Prometheus · Loki · cAdvisor]" as obs_layer #LightGreen
@@ -21,7 +21,7 @@ node "Host Services\n[IP: ${SERVER_IP}]" as host {
 }
 
 user_vpn --> wan
-wan      --> net_layer : "VPN (51820 UDP)"
+wan      --> net_layer : "Túnel ZTNA (Tailscale)"
 user_lan --> net_layer : "LAN (${LAN_SUBNET})"
 
 net_layer   --> svc_layer     : "Proxy Pass via homelab_net"

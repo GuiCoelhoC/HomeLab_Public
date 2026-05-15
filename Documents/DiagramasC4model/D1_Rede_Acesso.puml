@@ -1,6 +1,6 @@
 @startuml D1_Rede_Acesso
 !theme materia
-title Homelab — D1: Rede & Acesso\n(Como o tráfego entra — e o que é bloqueado)
+title Homelab — D1: Rede & Acesso\n(Como o tráfego entra — ZTNA e Bloqueios)
 
 top to bottom direction
 skinparam defaultTextAlignment center
@@ -13,7 +13,7 @@ cloud "Rede Local (LAN)\n[${LAN_SUBNET}]" as lan
 
 ' ── Router ────────────────────────────────────────────────────
 node "Router Principal" as router {
-    card "NAT / Port Forwarding\n[51820 UDP → Host]" as nat
+    card "Firewall (Sem Port Forwarding)\n[0 Incoming Active Ports]" as nat
 }
 
 ' ── Host ──────────────────────────────────────────────────────
@@ -21,53 +21,49 @@ node "Host [${SERVER_IP}]" as host {
 
     card "DuckDNS (DDNS)\n[Docker · Outbound only]" as ddns
 
-    card "WireGuard VPN (PiVPN)\n[Bare-metal · Gateway]\n[Porta: 51820 UDP]\n[Túnel: ${VPN_SUBNET}]" as vpn
+    card "Tailscale (ZTNA)\n[Bare-metal · Mesh VPN]\n[Conexão Outbound / DERP Fallback]" as vpn
 
     card "Nginx Proxy Manager\n[Docker · Portas host: 80, 443]\n[Único ponto de entrada HTTP/S]" as npm
 
 }
 
-' ── Fluxo da WAN para o router ───────────────────────────────
-wan --> router
+' ── Fluxos a partir da WAN ───────────────────────────────────
+wan --> router : "Tráfego Bloqueado\n(Nenhum encaminhamento no router)"
+router --> nat : "Drop"
 
-' ── Port forwarding no router ────────────────────────────────
-nat --> vpn     : "51820 UDP\n(VPN tunnel)"
+' ── Ligação Tailscale (Perfurando a Rede) ────────────────────
+vpn --> wan : "Hole Punching / DERP Relays\n(Túnel estabelecido outbound para o control plane)"
+note right of vpn
+  Servidor Host atua como
+  Subnet Router anunciando a
+  LAN: ${LAN_SUBNET}
+  aos peers da malha Tailscale.
+end note
 
 ' ── Acesso LAN direto ────────────────────────────────────────
 lan --> npm : "HTTP/S (80/443)\nacesso direto"
-lan --> vpn
+vpn --> lan : "Tráfego desencapsulado flui para a LAN"
 
 ' ── DDNS outbound ────────────────────────────────────────────
 ddns --> wan : "Atualiza registo DNS\n(outbound)"
 
-' ── VPN injeta na LAN ────────────────────────────────────────
-vpn --> lan : "IP Forwarding\n${VPN_SUBNET} → ${LAN_SUBNET}\nCliente remoto passa a estar dentro da LAN"
-
 ' ── Bloqueio explícito ────────────────────────────────────────
 note as block
-  <color:red>**ACESSO NEGADO por omissão:**</color>
-  Qualquer porta não listada acima
-  é bloqueada no router.
-  Não há acesso direto HTTP/S externo —
-  cliente remoto tem de entrar pela VPN
-  e depois aceder ao NPM como se
-  estivesse na LAN.
+  <color:green>**ACESSO ESTANQUE (Zero-Trust):**</color>
+  Não existe nenhuma porta aberta
+  para a Internet.
+  O cliente remoto entra apenas
+  autenticado via Tailscale através de
+  túneis p2p ou DERP relay.
 end note
 
 ' ── Notas de contexto ────────────────────────────────────────
-note bottom of vpn
-  Bare-metal (não dockerizado).
-  Injeta clientes remotos
-  diretamente na LAN via
-  IP Forwarding do kernel.
-end note
-
 note right of npm
   TLS (Let's Encrypt).
-  Só acessível via LAN ou
-  após entrada pela VPN.
-  Nunca exposto diretamente
-  à WAN sem VPN.
+  Acessível via LAN ou
+  clientes conectados ao Tailscale.
+  Tem split DNS via AdGuard para
+  resolver nomes locais.
 end note
 
 ' ── Referência cruzada ───────────────────────────────────────
