@@ -1,0 +1,5 @@
+filenames:
+  - /npm_data/logs/*_access.log
+  - /npm_data/logs/fallback_access.log
+labels:
+  type: nginx
