@@ -7,14 +7,13 @@ skinparam defaultTextAlignment center
 skinparam nodesep 40
 skinparam ranksep 50
 
-' ── Sistema externo ───────────────────────────────────────────
 cloud "Discord (API)" as discord
 
-' ── Pipeline de observabilidade ───────────────────────────────
 node "Host [${SERVER_IP}]" as host {
     frame "Docker Network: monitor_net (Bridge)" {
         card "Node Exporter\n[Métricas de hardware]" as node_exporter
         card "cAdvisor\n[Métricas de containers]" as cadvisor
+        card "CrowdSec Agent\n[Métricas de segurança]\n[Porta: 6060]" as crowdsec #Salmon
         
         card "Promtail\n[Recolha de Docker logs]" as promtail
 
@@ -26,34 +25,21 @@ node "Host [${SERVER_IP}]" as host {
     }
 }
 
-' ── Fluxo de métricas (pull — bottom-up) ─────────────────────
 node_exporter <-- prometheus : "Scrape"
 cadvisor      <-- prometheus : "Scrape"
+crowdsec      <-- prometheus : "Scrape (cs_active_decisions)"
+
 promtail      --> loki       : "Push logs"
 
 prometheus    <-- grafana    : "Query PromQL"
 loki          <-- grafana    : "Query LogQL"
 
-' ── Alertas (outbound) ────────────────────────────────────────
 grafana    --> discord : "Webhook"
-uptimekuma --> discord : "Webhook\n(Alertas de disponibilidade)"
+uptimekuma --> discord : "Webhook"
 
-' ── Notas ─────────────────────────────────────────────────────
 note right of cadvisor
-  Extrai métricas
-  diretamente do
-  /var/run/docker.sock
-end note
-
-note right of promtail
-  Lê logs montados
-  em /var/log e
-  containers Docker
-end note
-
-' ── Referências cruzadas ──────────────────────────────────────
-note bottom of grafana
-  → Volumes montados em **D4** (Armazenamento)
+  Extrai métricas do host
+  via /var/run/docker.sock
 end note
 
 @enduml

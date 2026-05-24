@@ -1,74 +1,43 @@
 @startuml D1_Rede_Acesso
 !theme materia
-title Homelab — D1: Rede & Acesso\n(Como o tráfego entra — ZTNA e Bloqueios)
+title Homelab — D1: Rede & Acesso\n(Como o tráfego entra — ZTNA, Bloqueios e IDS/IPS)
 
 top to bottom direction
 skinparam defaultTextAlignment center
 skinparam nodesep 40
 skinparam ranksep 55
 
-' ── Sistemas externos ─────────────────────────────────────────
 cloud "Internet (WAN)\n[IP Público Dinâmico]" as wan
 cloud "Rede Local (LAN)\n[${LAN_SUBNET}]" as lan
 
-' ── Router ────────────────────────────────────────────────────
 node "Router Principal" as router {
     card "Firewall (Sem Port Forwarding)\n[0 Incoming Active Ports]" as nat
 }
 
-' ── Host ──────────────────────────────────────────────────────
 node "Host [${SERVER_IP}]" as host {
-
-    card "DuckDNS (DDNS)\n[Docker · Outbound only]" as ddns
-
+    card "CrowdSec Firewall Bouncer\n[Bare-metal]\n[Filtra IPs Maliciosos no iptables]" as bouncer #Salmon
     card "Tailscale (ZTNA)\n[Bare-metal · Mesh VPN]\n[Conexão Outbound / DERP Fallback]" as vpn
-
     card "Nginx Proxy Manager\n[Docker · Portas host: 80, 443]\n[Único ponto de entrada HTTP/S]" as npm
-
+    card "DuckDNS (DDNS)\n[Docker · Outbound only]" as ddns
+    
+    bouncer -> npm : "Tráfego Limpo flui para NPM"
 }
 
-' ── Fluxos a partir da WAN ───────────────────────────────────
-wan --> router : "Tráfego Bloqueado\n(Nenhum encaminhamento no router)"
+wan --> router : "Tráfego Bloqueado"
 router --> nat : "Drop"
 
-' ── Ligação Tailscale (Perfurando a Rede) ────────────────────
-vpn --> wan : "Hole Punching / DERP Relays\n(Túnel estabelecido outbound para o control plane)"
-note right of vpn
-  Servidor Host atua como
-  Subnet Router anunciando a
-  LAN: ${LAN_SUBNET}
-  aos peers da malha Tailscale.
-end note
+vpn --> wan : "Hole Punching / DERP Relays\n(Túnel outbound)"
 
-' ── Acesso LAN direto ────────────────────────────────────────
-lan --> npm : "HTTP/S (80/443)\nacesso direto"
-vpn --> lan : "Tráfego desencapsulado flui para a LAN"
+lan --> bouncer : "HTTP/S (80/443)\n(IP passa pela firewall antes do NPM)"
+vpn --> bouncer : "Tráfego desencapsulado\n(passa pela firewall antes do NPM)"
 
-' ── DDNS outbound ────────────────────────────────────────────
-ddns --> wan : "Atualiza registo DNS\n(outbound)"
+ddns --> wan : "Atualiza registo DNS"
 
-' ── Bloqueio explícito ────────────────────────────────────────
-note as block
-  <color:green>**ACESSO ESTANQUE (Zero-Trust):**</color>
-  Não existe nenhuma porta aberta
-  para a Internet.
-  O cliente remoto entra apenas
-  autenticado via Tailscale através de
-  túneis p2p ou DERP relay.
-end note
-
-' ── Notas de contexto ────────────────────────────────────────
-note right of npm
-  TLS (Let's Encrypt).
-  Acessível via LAN ou
-  clientes conectados ao Tailscale.
-  Tem split DNS via AdGuard para
-  resolver nomes locais.
-end note
-
-' ── Referência cruzada ───────────────────────────────────────
-note bottom of npm
-  → Proxy passes detalhados em **D2a**
+note right of bouncer
+  Atua ao nível do Kernel.
+  Consulta API do CrowdSec Container.
+  Se o IP for malicioso = BLOCK.
+  Se for seguro = Passa ao NPM.
 end note
 
 @enduml

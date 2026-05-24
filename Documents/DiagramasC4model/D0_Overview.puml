@@ -13,7 +13,7 @@ cloud "Internet (WAN)" as wan
 cloud "Discord (API)" as discord
 
 node "Host Services\n[IP: ${SERVER_IP}]" as host {
-    card "Acesso & Rede\n[Tailscale · DuckDNS · NPM]" as net_layer #Cyan
+    card "Segurança, Acesso & Rede\n[Tailscale · CrowdSec IDS/IPS · NPM]" as net_layer #Cyan
     card "Infraestrutura\n[Portainer · Homepage · Uptime Kuma · AdGuard]" as svc_layer #LightGray
     card "Private Cloud\n[Immich Stack]" as immich_layer #LightBlue
     card "Observabilidade\n[Grafana · Prometheus · Loki · cAdvisor]" as obs_layer #LightGreen

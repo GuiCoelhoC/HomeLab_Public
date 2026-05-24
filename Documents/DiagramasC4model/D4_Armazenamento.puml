@@ -7,10 +7,9 @@ skinparam defaultTextAlignment center
 skinparam nodesep 30
 skinparam ranksep 60
 
-' ── Serviços agrupados por diagrama de origem ─────────────────
-
 package "D2a — Infraestrutura & Proxy" #LightYellow {
     card "Nginx Proxy Manager" as npm
+    card "CrowdSec Agent"      as crowdsec
     card "Portainer"           as portainer
     card "Homepage"            as homepage
     card "AdGuard Home"        as adguard
@@ -31,47 +30,41 @@ package "D3 — Observabilidade" #LightGreen {
     card "Promtail"      as promtail
 }
 
-' ── Volumes (host) ────────────────────────────────────────────
 database "Host Volumes / Mounts\n(/var/lib/docker/volumes/ & Bind)" as vols {
-    storage "npm_data\nnpm_letsencrypt"       as vol_npm
+    storage "npm_data\nnpm_letsencrypt"      as vol_npm
+    storage "crowdsec_db\nconfig\nacquis.d" as vol_cs
     storage "portainer_data"                  as vol_portainer
     storage "homepage_config"                 as vol_homepage
-    storage "adguard_config\nadguard_data"    as vol_adguard
+    storage "adguard_config\nadguard_data"   as vol_adguard
     storage "kuma_data"                       as vol_kuma
-    
     storage "pgdata\nmodel-cache\n${UPLOAD_LOCATION}" as vol_immich
-    
     storage "grafana_data"                    as vol_grafana
     storage "prometheus_data\n.yml config"    as vol_prom
     storage "Host root (/)\nDocker Sock/Logs" as vol_host
 }
 
-' ── Montagens — Infraestrutura ────────────────────────────────
 npm        ..> vol_npm       : "mount"
+crowdsec   ..> vol_cs        : "mount"
+crowdsec   ..> vol_npm       : "read-only mount (logs)"
 portainer  ..> vol_portainer : "mount"
 homepage   ..> vol_homepage  : "mount"
 adguard    ..> vol_adguard   : "mount"
 uptimekuma ..> vol_kuma      : "mount"
 
-' ── Montagens — Private Cloud ─────────────────────────────────
 immich_server ..> vol_immich : "mount"
 immich_ml     ..> vol_immich : "mount (cache)"
 immich_db     ..> vol_immich : "mount (pgdata)"
 
-' ── Montagens — Observabilidade ───────────────────────────────
 grafana       ..> vol_grafana : "mount"
 prometheus    ..> vol_prom    : "mount"
 node_exporter ..> vol_host    : "bind (rootfs)"
 cadvisor      ..> vol_host    : "bind (sys/sock)"
 promtail      ..> vol_host    : "bind (sock/logs)"
 
-' ── Notas ─────────────────────────────────────────────────────
-note bottom of vol_npm
-  Inclui certificados Let's Encrypt
-end note
-
-note bottom of vols
-  Dados persistem a um `docker compose down`.
+note bottom of crowdsec
+  CrowdSec precisa do volume 
+  do NPM montado como Read-Only
+  para consumir o access.log
 end note
 
 @enduml

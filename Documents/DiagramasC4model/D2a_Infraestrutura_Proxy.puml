@@ -1,21 +1,20 @@
 @startuml D2a_Infraestrutura_Proxy
 !theme materia
-title Homelab — D2a: Infraestrutura & Proxy\n(Serviços de gestão e DNS — acesso via LAN ou VPN)
+title Homelab — D2a: Infraestrutura & Proxy\n(Serviços de gestão, DNS e IDS/IPS)
 
 top to bottom direction
 skinparam defaultTextAlignment center
 skinparam nodesep 40
 skinparam ranksep 50
 
-' ── Ponto de entrada (definido em D1) ────────────────────────
 card "Nginx Proxy Manager\n[← ver D1 para detalhe de rede]" as npm
 
-' ── Redes Docker ──────────────────────────────────────────────
 frame "Docker Networks" {
     frame "homelab_net" as hnet {
+        card "CrowdSec Agent\n[Analisa logs do NPM]" as crowdsec #Salmon
         card "Portainer\n[Gestão de containers]" as portainer
         card "Homepage\n[Dashboard pessoal]" as homepage
-        card "AdGuard Home\n[Porta host: 53 (DNS)]\n[Bloqueio de anúncios + DNS local]" as adguard
+        card "AdGuard Home\n[Bloqueio de anúncios + DNS local]" as adguard
     }
     
     frame "monitor_net" as mnet {
@@ -28,7 +27,6 @@ frame "Docker Networks" {
     }
 }
 
-' ── Proxy passes do NPM ───────────────────────────────────────
 npm --> portainer  : "Proxy Pass"
 npm --> homepage   : "Proxy Pass"
 npm --> uptimekuma : "Proxy Pass"
@@ -36,19 +34,14 @@ npm --> grafana    : "Proxy Pass"
 npm --> adguard    : "Proxy Pass"
 npm --> immich     : "Proxy Pass"
 
-' ── DNS (porta exposta ao host, tráfego vem da LAN diretamente)
+npm .right.> crowdsec : "Ficheiros Log (via readonly mount)\nParseados via acquis.d"
+crowdsec .up.> npm : "API Expõe Bans (127.0.0.1:8080)\nPara o Host Bouncer consumir"
+
 cloud "Rede Local (LAN)" as lan
-lan --> adguard : "Pedidos DNS\n(porta host 53 UDP/TCP)"
+lan --> adguard : "Pedidos DNS\n(UDP/TCP 53)"
 
-' ── Alertas ───────────────────────────────────────────────────
 cloud "Discord (API)" as discord
-uptimekuma --> discord : "Webhook\n(Alertas de disponibilidade)"
-
-' ── Referências cruzadas ──────────────────────────────────────
-note left of npm
-  ← Acesso restrito: LAN ou VPN — ver **D1**
-  → Volumes montados em **D4**
-  → Stack Completa Observabilidade em **D3**
-end note
+uptimekuma --> discord : "Webhook (Disponibilidade)"
+crowdsec --> discord : "Webhook (Banimentos e Alertas de Ataque)"
 
 @enduml
