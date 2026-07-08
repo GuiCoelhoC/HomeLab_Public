@@ -10,6 +10,10 @@ services:
       - /etc/localtime:/etc/localtime:ro
     env_file:
       - .env
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
     depends_on:
       - redis
       - database
@@ -24,6 +28,10 @@ services:
       - model-cache:/cache
     env_file:
       - .env
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
     restart: unless-stopped
     networks:
       - immich_net
