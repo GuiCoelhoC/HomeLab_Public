@@ -56,4 +56,4 @@ This repository contains the infrastructure configurations, Docker Compose files
    ```
 
 ---
-*Created and maintained as a showcase of Systems Administration, DevOps, and Platform Engineering skills.*
+*Created and maintained as a showcase of network infrastructure, self-hosted systems, and observability engineering.*
