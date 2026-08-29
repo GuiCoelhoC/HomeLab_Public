@@ -11,3 +11,4 @@ uptime-kuma/kuma_data/
 **/redis_data/
 **/.cache/
 **/thumbs/
+crowdsec/my-whitelist.yaml
