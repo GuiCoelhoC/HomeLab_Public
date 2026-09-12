@@ -1,0 +1,21 @@
+services:
+  mosquitto:
+    image: eclipse-mosquitto:latest
+    container_name: mosquitto
+    restart: unless-stopped
+    ports:
+      # CRÍTICO: Binda a porta 1883 APENAS ao IP do Tailscale.
+      # A tua LAN (192.168.1.x) não conseguirá aceder ao broker.
+      - "100.97.179.1:1883:1883"
+    volumes:
+      - ./config/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - ./data:/mosquitto/data
+      - ./log:/mosquitto/log
+    # Mantemos o Mosquitto numa rede bridge isolada, sem acesso 
+    # à homelab_net, para minimizar a superfície de ataque.
+    networks:
+      - mosquitto_net
+
+networks:
+  mosquitto_net:
+    driver: bridge
